@@ -28,6 +28,36 @@ const writeConfig = (nextPosition) => new Promise((resolve, reject) => {
     });
 })
 
+const roofEvent = (roof) => {
+    if (roof.level > configRoof.currentPosition) {
+        const action = 'open';
+        if (configRoof.currentPosition === 0) {
+            return {
+                seconds: roof.seconds,
+                action,
+                active: true,
+            }
+        } else {
+            const secondsValue = roof.level - configRoof.currentPosition;
+            return {
+                seconds: secondsValue,
+                action,
+                active: true,
+            }
+        }
+    }
+
+    if (roof.level < configRoof.currentPosition) {
+        const action = 'close';
+        const secondsValue = configRoof.currentPosition -  roof.level;
+        return {
+            seconds: secondsValue,
+            action,
+            active: true,
+        }
+    }
+  }
+
 const readConfig = () => {}
 
 app.get('/status', (request, response) => {
@@ -37,16 +67,18 @@ app.get('/status', (request, response) => {
     response.send(status);
  });
 
- app.get('/roof-config', (request, response) => {
+ app.get('/roof', (request, response) => {
     response.send(configRoof);
  })
 
  app.post('/roof', async (request, response) => {
     const body = request.body;
     try {
-        const resp = await writeConfig(body.nextPosition);
-        response.send(resp);
-    } catch {
+        const respEvt = roofEvent(body.roof);
+        await writeConfig(body.nextPosition);
+        response.send({ resAction: respEvt });
+    } catch (e) {
+        console.log(e)
         response.send({ error: 'error write params roof' });
     }
  })
