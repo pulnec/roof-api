@@ -74,7 +74,7 @@ configRoof.roof.forEach((el) => {
     eventPromise.push(roofEv(el))
 });
 
-Promise.allSettled(roofs)
+Promise.allSettled(eventPromise)
 }
 
 app.get('/status', (request, response) => {
@@ -89,8 +89,12 @@ app.get('/status', (request, response) => {
  })
 
  app.get('/roof/none', (request, response) => {
-    actionRoof('none');
-    response.send({ message: 'action none success'});
+    try {
+        actionRoof('none');
+        response.send({ message: 'action none success'});
+    } catch {
+         console.log('error action none')
+    }
  });
 
 
@@ -98,6 +102,7 @@ app.get('/status', (request, response) => {
     const body = request.body;
     try {
         const respEvt = roofEvent(body.roof);
+        console.log('respEvt', respEvt);
         await writeConfig(body.nextPosition);
         actionRoof(respEvt.action);
         response.send({ resAction: respEvt });
