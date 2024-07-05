@@ -1,11 +1,14 @@
 const express = require('express');
 const configRoof = require('./config.json')
 const bodyParser = require('body-parser')
+const cors = require('cors');
 const fs = require('fs');
 
 const app = express ();
 
-
+app.use(cors({
+    origin: '*'
+}));
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
 app.use(express.json());
