@@ -3,6 +3,7 @@ const configRoof = require('./config.json')
 const bodyParser = require('body-parser')
 const cors = require('cors');
 const fs = require('fs');
+const { default: axios } = require('axios');
 
 const app = express ();
 
@@ -61,7 +62,20 @@ const roofEvent = (roof) => {
     }
   }
 
-const readConfig = () => {}
+const actionRoof = (action) => {
+
+const roofEv = (ip) => {
+    axios.get(`http://${ip}/${action}}`);
+}
+
+const eventPromise = [];
+
+configRoof.roof.forEach((el) => {
+    eventPromise.push(roofEv(el))
+});
+
+Promise.allSettled(roofs)
+}
 
 app.get('/status', (request, response) => {
     const status = {
@@ -74,11 +88,18 @@ app.get('/status', (request, response) => {
     response.send(configRoof);
  })
 
+ app.get('/roof/none', (request, response) => {
+    actionRoof('none');
+    response.send({ message: 'action none success'});
+ });
+
+
  app.post('/roof', async (request, response) => {
     const body = request.body;
     try {
         const respEvt = roofEvent(body.roof);
         await writeConfig(body.nextPosition);
+        actionRoof(respEvt.action);
         response.send({ resAction: respEvt });
     } catch (e) {
         console.log(e)
