@@ -103,6 +103,15 @@ app.get('/status', (request, response) => {
     }
  });
 
+ app.get('/roof/reset', async (request, response) => {
+    try {
+        await writeConfig(0);
+        response.send({ message: 'action none success'});
+    } catch {
+         console.log('error action none')
+    }
+ });
+
 
  app.post('/roof', async (request, response) => {
     const body = request.body;
