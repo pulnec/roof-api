@@ -53,7 +53,11 @@ const roofEvent = (roof) => {
 
     if (roof.level < configRoof.currentPosition) {
         const action = 'close';
-        const secondsValue = configRoof.currentPosition -  roof.level;
+        let secondsValue = configRoof.currentPosition -  roof.level;
+        if (roof.level === 0) {
+            const currentValue = configRoof.roof.find(e => e.level === configRoof.currentPosition)
+            secondsValue = currentValue.seconds;
+        }
         return {
             seconds: secondsValue,
             action,
