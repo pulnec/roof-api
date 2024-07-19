@@ -16,7 +16,6 @@ app.use(express.json());
 
 const PORT = 4569;
 
-
 const writeConfig = (nextPosition) => new Promise((resolve, reject) => {
     const newConfig = {
         ...configRoof,
@@ -32,17 +31,22 @@ const writeConfig = (nextPosition) => new Promise((resolve, reject) => {
     });
 })
 
-const roofEvent = (roof) => {
-    if (roof.level > configRoof.currentPosition) {
+const roofEvent = async (roof) => {
+
+    try {
+    const { data } = await axios.get('http://localhost:4569/roof');
+
+        if (roof.level > data.currentPosition) {
         const action = 'open';
-        if (configRoof.currentPosition === 0) {
+        if (data.currentPosition === 0) {
             return {
                 seconds: roof.seconds,
                 action,
                 active: true,
             }
         } else {
-            const secondsValue = roof.level - configRoof.currentPosition;
+            const currentValue = data.times.filter(e => e.level === data.currentPosition)[0];
+            const secondsValue = roof.seconds - currentValue.seconds;
             return {
                 seconds: secondsValue,
                 action,
@@ -50,12 +54,14 @@ const roofEvent = (roof) => {
             }
         }
     }
-
-    if (roof.level < configRoof.currentPosition) {
+    
+    if (roof.level < data.currentPosition) {
         const action = 'close';
-        let secondsValue = configRoof.currentPosition -  roof.level;
+        const currentValue = data.times.filter(e => e.level === data.currentPosition)[0]
+
+        let secondsValue = currentValue.seconds -  roof.seconds;
+        
         if (roof.level === 0) {
-            const currentValue = configRoof.roof.find(e => e.level === configRoof.currentPosition)
             secondsValue = currentValue.seconds;
         }
         return {
@@ -64,12 +70,16 @@ const roofEvent = (roof) => {
             active: true,
         }
     }
+    } catch (e) {
+        console.log(e)
+    }   
+
   }
 
 const actionRoof = (action) => {
 
 const roofEv = (ip) => {
-    const fixAction = action;
+    let fixAction = action;
     if (ip === '192.168.0.11' && action === 'open') {
         fixAction = 'close';
     } else if (ip === '192.168.0.11' && action === 'close') {
@@ -95,7 +105,13 @@ app.get('/status', (request, response) => {
  });
 
  app.get('/roof', (request, response) => {
-    response.send(configRoof);
+    fs.readFile("./config.json", "utf8", (error, data) => {
+        if (error) {
+            console.log(error);
+            return;
+          }
+          response.send(data)
+    })
  })
 
  app.get('/roof/none', (request, response) => {
@@ -120,7 +136,7 @@ app.get('/status', (request, response) => {
  app.post('/roof', async (request, response) => {
     const body = request.body;
     try {
-        const respEvt = roofEvent(body.roof);
+        const respEvt = await roofEvent(body.roof);
         console.log('respEvt', respEvt);
         await writeConfig(body.nextPosition);
         actionRoof(respEvt.action);
