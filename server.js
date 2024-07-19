@@ -95,7 +95,11 @@ configRoof.roof.forEach((el) => {
     eventPromise.push(roofEv(el))
 });
 
-Promise.allSettled(eventPromise)
+  Promise.allSettled(eventPromise).then((response) => {
+    console.log(response);
+  }).catch((e) => {
+    console.log('error promise', e);
+  })
 }
 
 app.get('/status', (request, response) => {
