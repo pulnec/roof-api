@@ -85,7 +85,7 @@ const roofEv = (ip) => {
     } else if (ip === '192.168.0.11' && action === 'close') {
         fixAction = 'open';
     }
-    axios.get(`http://${ip}/${fixAction}}`);
+    axios.get(`http://${ip}/${fixAction}`);
 }
 
 const eventPromise = [];
