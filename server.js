@@ -35,7 +35,6 @@ const roofEvent = async (roof) => {
 
     try {
     const { data } = await axios.get('http://localhost:4569/roof');
-
         if (roof.level > data.currentPosition) {
         const action = 'open';
         if (data.currentPosition === 0) {
@@ -59,24 +58,26 @@ const roofEvent = async (roof) => {
         const action = 'close';
         const currentValue = data.times.filter(e => e.level === data.currentPosition)[0]
 
-        let secondsValue = currentValue.seconds -  roof.seconds;
+        let secondsValue = currentValue.seconds - roof.seconds;
         
         if (roof.level === 0) {
             secondsValue = currentValue.seconds;
         }
+
         return {
             seconds: secondsValue,
             action,
             active: true,
         }
     }
+
     } catch (e) {
         console.log(e)
     }   
 
   }
 
-const actionRoof = (action) => {
+const actionRoof = async (action) => {
 
 const roofEv = (ip) => {
     let fixAction = action;
@@ -85,8 +86,7 @@ const roofEv = (ip) => {
     } else if (ip === '192.168.0.11' && action === 'close') {
         fixAction = 'open';
     }
-    console.log(`http://${ip}/${fixAction}`);
-    //axios.get(`http://${ip}/${fixAction}`);
+    axios.get(`http://${ip}/${fixAction}`);
 }
 
 const eventPromise = [];
@@ -138,7 +138,6 @@ app.get('/status', (request, response) => {
     const body = request.body;
     try {
         const respEvt = await roofEvent(body.roof);
-        console.log('respEvt', respEvt);
         await writeConfig(body.nextPosition);
         actionRoof(respEvt.action);
         response.send({ resAction: respEvt });
@@ -148,6 +147,12 @@ app.get('/status', (request, response) => {
     }
  })
 
+
+ app.get('/test', async (request, response) => {
+    const {data} = axios.get('https://swapi.dev/api/people/1/');
+    response.send(data);
+    console.log(data);
+ })
 
 
 app.listen(PORT, () => {
