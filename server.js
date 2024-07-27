@@ -77,6 +77,22 @@ const roofEvent = async (roof) => {
 
   }
 
+
+const checkStatus = async () => {
+    try {
+        const roofs = [];
+        const roofResquest = (ip) => {
+            axios.get(`http://${ip}`);
+        }
+        configRoof.roof.forEach((el) => {
+            roofs.push(roofResquest(el))
+        });
+        Promise.all(roofs);
+    } catch {
+        throw new Error('BAD_ROOF_STATUS')
+    }
+}
+
 const actionRoof = async (action) => {
 
 const roofEv = (ip) => {
@@ -112,7 +128,7 @@ app.get('/status', (request, response) => {
  app.get('/roof', (request, response) => {
     fs.readFile("./config.json", "utf8", (error, data) => {
         if (error) {
-            console.log(error);
+            response.status(400).send({ error: 'get config error' });
             return;
           }
           response.send(data)
@@ -122,18 +138,18 @@ app.get('/status', (request, response) => {
  app.get('/roof/none', (request, response) => {
     try {
         actionRoof('none');
-        response.send({ message: 'action none success'});
-    } catch {
-         console.log('error action none')
+        response.status(200).send({ message: 'action none success'});
+    } catch (e) {
+        response.status(400).send({ error: 'error none action', e: e.message});
     }
  });
 
  app.get('/roof/reset', async (request, response) => {
     try {
         await writeConfig(0);
-        response.send({ message: 'action none success'});
-    } catch {
-         console.log('error action none')
+        response.status(200).send({ message: 'action none success'});
+    } catch (e) {
+        response.status(400).send({ error: 'error reset action', e: e.message});
     }
  });
 
@@ -141,13 +157,13 @@ app.get('/status', (request, response) => {
  app.post('/roof', async (request, response) => {
     const body = request.body;
     try {
+        await checkStatus();
         const respEvt = await roofEvent(body.roof);
         await writeConfig(body.nextPosition);
         actionRoof(respEvt.action);
-        response.send({ resAction: respEvt });
+        response.status(200).send({ resAction: respEvt });
     } catch (e) {
-        console.log(e)
-        response.send({ error: 'error write params roof' });
+        response.status(400).send({ error: 'error write params roof', e: e.message});
     }
  })
 
