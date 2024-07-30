@@ -1,9 +1,11 @@
 const express = require('express');
 const configRoof = require('./config.json')
 const bodyParser = require('body-parser')
+const logger = require('morgan');
 const cors = require('cors');
 const fs = require('fs');
 const { default: axios } = require('axios');
+const morgan = require('morgan');
 
 const app = express ();
 
@@ -13,6 +15,10 @@ app.use(cors({
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
 app.use(express.json());
+app.use(logger('common', {
+    stream: fs.createWriteStream('./access.log', {flags: 'a'})
+}));
+app.use(logger('dev'));
 
 const PORT = 4569;
 
@@ -70,7 +76,6 @@ const roofEvent = async (roof) => {
             active: true,
         }
     }
-
     } catch (e) {
         console.log(e)
     }   
@@ -78,20 +83,21 @@ const roofEvent = async (roof) => {
   }
 
 
-const checkStatus = async () => {
-    try {
-        const roofs = [];
-        const roofResquest = (ip) => {
-            axios.get(`http://${ip}`);
-        }
-        configRoof.roof.forEach((el) => {
-            roofs.push(roofResquest(el))
-        });
-        Promise.all(roofs);
-    } catch {
-        throw new Error('BAD_ROOF_STATUS')
-    }
-}
+const checkStatus = async () => new Promise((resolve, reject) => {
+    let roofs = [];
+    configRoof.roof.forEach( async (el) => {
+        roofs.push(axios.get(`http://${el}`,{ timeout: 4000 }));
+    });
+    Promise.all(roofs).then((res) => {
+        resolve(true);
+    }).catch((err) => {
+      if (err.code === 'ECONNABORTED') {
+        reject('BAD_ROOF_STATUS');
+      } else {
+        reject('BAD_ROOF_STATUS');
+      }
+    }); 
+});
 
 const actionRoof = async (action) => {
 
@@ -140,7 +146,7 @@ app.get('/status', (request, response) => {
         actionRoof('none');
         response.status(200).send({ message: 'action none success'});
     } catch (e) {
-        response.status(400).send({ error: 'error none action', e: e.message});
+        response.status(400).send({ error: 'error none action', e });
     }
  });
 
@@ -149,7 +155,7 @@ app.get('/status', (request, response) => {
         await writeConfig(0);
         response.status(200).send({ message: 'action none success'});
     } catch (e) {
-        response.status(400).send({ error: 'error reset action', e: e.message});
+        response.status(400).send({ error: 'error reset action', e });
     }
  });
 
@@ -163,7 +169,7 @@ app.get('/status', (request, response) => {
         actionRoof(respEvt.action);
         response.status(200).send({ resAction: respEvt });
     } catch (e) {
-        response.status(400).send({ error: 'error write params roof', e: e.message});
+        response.status(400).send({ error: 'error write params roof', e});
     }
  })
 
