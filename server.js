@@ -5,7 +5,6 @@ const logger = require('morgan');
 const cors = require('cors');
 const fs = require('fs');
 const { default: axios } = require('axios');
-const morgan = require('morgan');
 
 const app = express ();
 
@@ -86,15 +85,15 @@ const roofEvent = async (roof) => {
 const checkStatus = async () => new Promise((resolve, reject) => {
     let roofs = [];
     configRoof.roof.forEach( async (el) => {
-        roofs.push(axios.get(`http://${el}`,{ timeout: 4000 }));
+        roofs.push(axios.get(`http://${el}`,{ timeout: 6000 }));
     });
     Promise.all(roofs).then((res) => {
         resolve(true);
     }).catch((err) => {
       if (err.code === 'ECONNABORTED') {
-        reject('BAD_ROOF_STATUS');
+        reject('BAD_ROOF_STATUS_1');
       } else {
-        reject('BAD_ROOF_STATUS');
+        reject('BAD_ROOF_STATUS_2');
       }
     }); 
 });
@@ -169,6 +168,7 @@ app.get('/status', (request, response) => {
         actionRoof(respEvt.action);
         response.status(200).send({ resAction: respEvt });
     } catch (e) {
+        console.log('e', e);
         response.status(400).send({ error: 'error write params roof', e});
     }
  })
@@ -180,6 +180,14 @@ app.get('/status', (request, response) => {
     console.log(data);
  })
 
+ app.get('/roof/status', async (request, response) => {
+    try {
+        const res =  await checkStatus();
+        response.status(200).send(res);
+    } catch (e) {
+        response.status(400).send(e);
+    }
+ })
 
 app.listen(PORT, () => {
     console.log("Server Listening on PORT:", PORT);
